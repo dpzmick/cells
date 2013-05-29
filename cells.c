@@ -7,6 +7,7 @@
 int* rule30(int* input, int length) {
     int *output = (int*) malloc(length * sizeof(int));
     int left, right, above, left_i, right_i;
+    #pragma opm parallel for
     for (int i = 0; i < length; i++) {
         left_i = i - 1;
         right_i = i + 1;
@@ -43,28 +44,22 @@ int* centered_init(int length) {
 }
 
 int main(int argc, char **argv) {
-    int length = 20;
-    int timesteps = 100;
+    int length = 100000;
+    int timesteps = 5000000;
 
     srand(time(NULL));
     //int *init = random_init(length);
     int *init = centered_init(length);
-    printf("Initial data: \n");
-    for (int i = 0; i < length; i++) {
-        printf("%d ", init[i]);
-    }
-    printf("\n");
 
     int **data = (int**) malloc(timesteps * sizeof(int*));
     
     data[0] = init;
     for (int t = 1; t < timesteps; t++) {
         data[t] = rule30(data[t-1], length);
-        for (int i = 0; i < length; i++) {
-            printf("%d ", data[t][i]);
-        }
-        printf("\n");
     }
+
+    // TODO need pretty output, generate bitmap?
+    // TODO find a way to use less memory.
 
     exit(0);
 }
