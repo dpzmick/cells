@@ -121,11 +121,11 @@ int main(int argc, char **argv) {
     FILE* fp = make_pgm("output.pbm", length, timesteps);
 
     // TODO read initial state from file
-    printf("Generating input\n");
+    //printf("Generating input\n");
     //char *data = random_init(length);
     char *data = centered_init(length);
 
-    printf("Generating output\n");
+    //printf("Generating output\n");
     char *output = (char*) malloc(length * sizeof(char*));
 
     // buffer to hold things while running
@@ -134,18 +134,17 @@ int main(int argc, char **argv) {
         buffer[t] = (char*) malloc(length * sizeof(char*));
     }
 
-    printf("Running simulation\n");
+    //printf("Running simulation\n");
     time_t startTime = time(0);
     double time_file = 0;
     double time_rule = 0;
 
     for (int t = 0; t < timesteps; t++) {
+        // TODO async IO
         // write to buffer
         for (int i = 0; i < length; i++) {
             buffer[t][i] = 1 - data[i];
         }
-        //write_line(data, length, fp);
-        
         startTime = time(0);
         rule(rule_no, data, length, output);
         time_rule += time(0) - startTime;
@@ -153,18 +152,15 @@ int main(int argc, char **argv) {
         memcpy(data, output, length * sizeof(char));
     }
     
-    printf("Writing output file\n");
+    //printf("Writing output file\n");
     startTime = time(0);
-    //for (int t = 0; t < timesteps; t++) {
-    //    write_line(buffer[t], length, fp);
-    //}
     for (int t = 0; t < timesteps; t++) {
         fwrite(buffer[t], sizeof(char), length, fp);
     }
     fflush(fp);
     time_file = time(0) - startTime;
 
-    printf("Finishing up, time_file:%.0f, time_rule:%.0f\n", time_file, time_rule);
+    //printf("Finishing up, time_file:%.0f, time_rule:%.0f\n", time_file, time_rule);
     fclose(fp);
     free(data);
 

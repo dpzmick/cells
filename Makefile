@@ -10,9 +10,11 @@ run: cells.c cells
 run_fav: cells cells.c
 	./cells 30 10000 5000
 
-view:
+image:
 	pnmtopng output.pbm > output.png
 	rm output.pbm
+
+view: image
 	open output.png
 
 clean:
