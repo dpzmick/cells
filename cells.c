@@ -21,7 +21,6 @@ FILE* make_pbm(char name[], int length, int timesteps) {
 
 // write a line to an image file
 void write_line(char *line, int line_length, FILE* fp) {
-    //printf("Writing line\n");
     for (int i = 0; i < line_length; i++) {
         fprintf(fp, "%d", line[i]);
         if (i != line_length - 1) { fprintf(fp, " "); }
@@ -38,7 +37,6 @@ void write_line(char *line, int line_length, FILE* fp) {
 // assumes anything "off the map" is dead
 // output must be a chunk of memory we can overwrite of the right size
 void rule(int rule, char* input, int length, char* output) {
-    //printf("rule\n");
     int left, right, above, left_i, right_i;
     #pragma omp parallel for
     for (int i = 0; i < length; i++) {
@@ -51,18 +49,6 @@ void rule(int rule, char* input, int length, char* output) {
         else { right = input[right_i]; }
         above = input[i];
         
-        /*
-        printf("%d%d%d%d%d%d%d%d\n",
-                (rule >> 7) & 1,
-                (rule >> 6) & 1,
-                (rule >> 5) & 1,
-                (rule >> 4) & 1,
-                (rule >> 3) & 1,
-                (rule >> 2) & 1,
-                (rule >> 1) & 1,
-                (rule >> 0) & 1);
-        */
-
         switch(left*100 + above*10 + right){
             case 111:
                 output[i] = (rule >> 7) & 1;
@@ -93,7 +79,6 @@ void rule(int rule, char* input, int length, char* output) {
                 break;
         }
     }
-    //printf("out of the for\n");
     return;
 }
 
@@ -118,16 +103,6 @@ char* centered_init(int length) {
 /*******************************************************************************/
 /* Main                                                                        */
 /*******************************************************************************/
-void say_hi() {
-    int id = omp_get_thread_num();
-    printf("Hello from thread %d\n", id);
-}
-void inspect_data(int *data, int length) {
-    for (int i = 0; i < length; i++) {
-        printf("%d ", data[i]);
-    }
-    printf("\n");
-}
 void usage() {
     printf("Usage: cells r l t\n");
     printf("r - base-10 rule to use\n");
@@ -148,11 +123,12 @@ int main(int argc, char **argv) {
 
     // TODO read initial state from file
     printf("Generating input\n");
-    //int *init = random_init(length);
-    char *data = centered_init(length);
+    char *data = random_init(length);
+    //char *data = centered_init(length);
 
     printf("Generating output\n");
     char *output = (char*) malloc(length * sizeof(char));
+
     // buffer to hold things while running
     char** buffer = (char**) malloc(timesteps * sizeof(char*));
     for (int t = 0; t < timesteps; t++) {
@@ -163,7 +139,6 @@ int main(int argc, char **argv) {
     time_t startTime = time(0);
     double time_file = 0;
     double time_rule = 0;
-    double time_cpy = 0;
 
     for (int t = 0; t < timesteps; t++) {
         // write to buffer
@@ -171,17 +146,11 @@ int main(int argc, char **argv) {
             buffer[t][i] = (char)data[i];
         }
         
-        //time_t startTime = time(0);
-        //write_line(data, length, fp);
-        //time_file += time(0) - startTime;
-
         startTime = time(0);
         rule(rule_no, data, length, output);
         time_rule += time(0) - startTime;
 
-        startTime = time(0);
         memcpy(data, output, length * sizeof(char));
-        time_cpy += time(0) - startTime;
     }
     
     printf("Writing output file\n");
@@ -192,7 +161,7 @@ int main(int argc, char **argv) {
     fflush(fp);
     time_file = time(0) - startTime;
 
-    printf("Finishing up, time_file:%.0f, time_rule:%.0f, time_cpy:%.0f\n", time_file, time_rule, time_cpy);
+    printf("Finishing up, time_file:%.0f, time_rule:%.0f\n", time_file, time_rule);
     fclose(fp);
     free(data);
 
