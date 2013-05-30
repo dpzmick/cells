@@ -8,7 +8,6 @@
 #include <time.h>
 #include <omp.h>
 
-
 /*******************************************************************************/
 /* Image Handling                                                              */
 /*******************************************************************************/
@@ -21,7 +20,7 @@ FILE* make_pbm(char name[], int length, int timesteps) {
 }
 
 // write a line to an image file
-void write_line(int *line, int line_length, FILE* fp) {
+void write_line(char *line, int line_length, FILE* fp) {
     //printf("Writing line\n");
     for (int i = 0; i < line_length; i++) {
         fprintf(fp, "%d", line[i]);
@@ -38,7 +37,7 @@ void write_line(int *line, int line_length, FILE* fp) {
 // Builds new array and returns a pointer to it following rule 30.
 // assumes anything "off the map" is dead
 // output must be a chunk of memory we can overwrite of the right size
-void rule(int rule, int* input, int length, int* output) {
+void rule(int rule, char* input, int length, char* output) {
     //printf("rule\n");
     int left, right, above, left_i, right_i;
     #pragma omp parallel for
@@ -101,8 +100,8 @@ void rule(int rule, int* input, int length, int* output) {
 /*******************************************************************************/
 /* Initialization                                                              */
 /*******************************************************************************/
-int* random_init(int length) {
-    int *init = (int*) malloc(length * sizeof(int));
+char* random_init(int length) {
+    char *init = (char*) malloc(length * sizeof(char));
     #pragma omp parallel for
     for (int i = 0; i < length; i++) {
         init[i] = (rand() % 100) > 50;
@@ -110,8 +109,8 @@ int* random_init(int length) {
     return init;
 }
 
-int* centered_init(int length) {
-    int *init = (int*) calloc(length, sizeof(int));
+char* centered_init(int length) {
+    char *init = (char*) calloc(length, sizeof(char));
     init[length / 2] = 1;
     return init;
 }
@@ -150,24 +149,54 @@ int main(int argc, char **argv) {
     // TODO read initial state from file
     printf("Generating input\n");
     //int *init = random_init(length);
-    int *data = centered_init(length);
+    char *data = centered_init(length);
 
     printf("Generating output\n");
-    int *output = (int*) malloc(length * sizeof(int));
-
-    printf("Running simulation\n");
-
+    char *output = (char*) malloc(length * sizeof(char));
+    // buffer to hold things while running
+    char** buffer = (char**) malloc(timesteps * sizeof(char*));
     for (int t = 0; t < timesteps; t++) {
-        write_line(data, length, fp);
-        rule(rule_no, data, length, output);
-        memcpy(data, output, length * sizeof(int));
+        buffer[t] = (char*) malloc(length * sizeof(char));
     }
 
-    printf("Finishing up\n");
-    write_line(data, length, fp);
+    printf("Running simulation\n");
+    time_t startTime = time(0);
+    double time_file = 0;
+    double time_rule = 0;
+    double time_cpy = 0;
+
+    for (int t = 0; t < timesteps; t++) {
+        // write to buffer
+        for (int i = 0; i < length; i++) {
+            buffer[t][i] = (char)data[i];
+        }
+        
+        //time_t startTime = time(0);
+        //write_line(data, length, fp);
+        //time_file += time(0) - startTime;
+
+        startTime = time(0);
+        rule(rule_no, data, length, output);
+        time_rule += time(0) - startTime;
+
+        startTime = time(0);
+        memcpy(data, output, length * sizeof(char));
+        time_cpy += time(0) - startTime;
+    }
+    
+    printf("Writing output file\n");
+    startTime = time(0);
+    for (int t = 0; t < timesteps; t++) {
+        write_line(buffer[t], length, fp);
+    }
     fflush(fp);
+    time_file = time(0) - startTime;
+
+    printf("Finishing up, time_file:%.0f, time_rule:%.0f, time_cpy:%.0f\n", time_file, time_rule, time_cpy);
     fclose(fp);
     free(data);
 
     exit(0);
 }
+
+
