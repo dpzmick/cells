@@ -6,6 +6,8 @@
 #include <stdio.h>
 #include <string.h>
 #include <time.h>
+#include <omp.h>
+
 
 /*******************************************************************************/
 /* Image Handling                                                              */
@@ -20,6 +22,7 @@ FILE* make_pbm(char name[], int length, int timesteps) {
 
 // write a line to an image file
 void write_line(int *line, int line_length, FILE* fp) {
+    printf("Writing line\n");
     for (int i = 0; i < line_length; i++) {
         fprintf(fp, "%d", line[i]);
         if (i != line_length - 1) { fprintf(fp, " "); }
@@ -35,8 +38,9 @@ void write_line(int *line, int line_length, FILE* fp) {
 // assumes anything "off the map" is dead
 // output must be a chunk of memory we can overwrite of the right size
 int* rule(int rule, int* input, int length, int* output) {
+    printf("rule\n");
     int left, right, above, left_i, right_i;
-    #pragma omp parallel for
+    //#pragma omp for
     for (int i = 0; i < length; i++) {
         left_i = i - 1;
         right_i = i + 1;
@@ -95,7 +99,7 @@ int* rule(int rule, int* input, int length, int* output) {
 /*******************************************************************************/
 int* random_init(int length) {
     int *init = (int*) malloc(length * sizeof(int));
-    #pragma omp parallel for
+    #pragma omp for
     for (int i = 0; i < length; i++) {
         init[i] = (rand() % 100) > 50;
     }
@@ -111,6 +115,16 @@ int* centered_init(int length) {
 /*******************************************************************************/
 /* Main                                                                        */
 /*******************************************************************************/
+void say_hi() {
+    int id = omp_get_thread_num();
+    printf("Hello from thread %d\n", id);
+}
+void inspect_data(int *data, int length) {
+    for (int i = 0; i < length; i++) {
+        printf("%d ", data[i]);
+    }
+    printf("\n");
+}
 void usage() {
     printf("Usage: cells r l t\n");
     printf("r - base-10 rule to use\n");
@@ -133,15 +147,31 @@ int main(int argc, char **argv) {
     //int *init = random_init(length);
     int *data = centered_init(length);
 
-    printf("Running simulation\n");
+    printf("Generating output\n");
+    int *output = (int*) malloc(length * sizeof(int));
 
-    int* output = (int*) malloc(length * sizeof(int));
+    printf("Running simulation\n");
     for (int t = 0; t < timesteps; t++) {
-        write_line(data, length, fp);
-        rule(rule_no, data, length, output);
+        #pragma omp parallel
+        {
+            #pragma omp single
+            {
+                //say_hi();
+                //inspect_data(data, length);
+                write_line(data, length, fp);
+            }
+            #pragma omp single
+            {
+                //say_hi();
+                rule(rule_no, data, length, output);
+            }
+        #pragma omp barrier
+        }
         memcpy(data, output, length * sizeof(int));
     }
 
+    printf("Finishing up\n");
+    write_line(data, length, fp);
     fflush(fp);
     fclose(fp);
     free(data);
