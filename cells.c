@@ -2,6 +2,29 @@
 #include <stdio.h>
 #include <time.h>
 
+/*******************************************************************************/
+/* Image Handling                                                              */
+/*******************************************************************************/
+// sets up an image file to write to
+FILE* make_pbm(char name[], int length, int timesteps) {
+    FILE *fp = fopen(name, "w");
+    fprintf(fp, "P1\n");
+    fprintf(fp, "%d %d\n", length, timesteps);
+    return fp;
+}
+
+void write_line(int *line, int line_length, FILE* fp) {
+    for (int i = 0; i < line_length; i++) {
+        fprintf(fp, "%d", line[i]);
+        if (i != line_length - 1) { fprintf(fp, " "); }
+    }
+    fprintf(fp, "\n");
+}
+
+
+/*******************************************************************************/
+/* Rules                                                                       */
+/*******************************************************************************/
 // Builds new array and returns a pointer to it following rule 30.
 // assumes anything "off the map" is dead
 int* rule30(int* input, int length) {
@@ -29,6 +52,9 @@ int* rule30(int* input, int length) {
     return output;
 }
 
+/*******************************************************************************/
+/* Initialization                                                              */
+/*******************************************************************************/
 int* random_init(int length) {
     int *init = (int*) malloc(length * sizeof(int));
     #pragma omp parallel for
@@ -44,25 +70,31 @@ int* centered_init(int length) {
     return init;
 }
 
+/*******************************************************************************/
+/* Main                                                                        */
+/*******************************************************************************/
 int main(int argc, char **argv) {
-    int length = 100;
-    int timesteps = 5000000;
-
     srand(time(NULL));
-    //int *init = random_init(length);
-    int *init = centered_init(length);
 
-    int **data = (int**) malloc(timesteps * sizeof(int*));
-    data[0] = init;
+    int length = 10000;
+    int timesteps = 5000;
+    FILE* fp = make_pbm("output.pbm", length, timesteps);
+
+    printf("Generating input\n");
+    //int *init = random_init(length);
+    int *data = centered_init(length);
+
+    printf("Running simulation\n");
 
     for (int t = 1; t < timesteps; t++) {
-        data[t] = rule30(data[t-1], length);
+        write_line(data, length, fp);
+        data = rule30(data, length);
     }
-    free(data);
-    free(init);
 
-    // TODO need pretty output, generate bitmap?
-    // TODO find a way to use less memory.
+    write_line(data, length, fp);
+    fflush(fp);
+    fclose(fp);
+    free(data);
 
     exit(0);
 }
