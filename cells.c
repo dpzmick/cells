@@ -1,3 +1,7 @@
+// I am a small wolfram elementary cellular automata simulator
+// David Zmick wrote this, but he really doesn't care what you do with it.
+// This is public domain
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <time.h>
