@@ -17,6 +17,7 @@ FILE* make_pbm(char name[], int length, int timesteps) {
     return fp;
 }
 
+// write a line to an image file
 void write_line(int *line, int line_length, FILE* fp) {
     for (int i = 0; i < line_length; i++) {
         fprintf(fp, "%d", line[i]);
@@ -46,6 +47,19 @@ int* rule(int rule, int* input, int length) {
         else { right = input[right_i]; }
         above = input[i];
     
+        printf("%d%d%d%d%d%d%d%d\n",
+                (rule >> 7) & 1,
+                (rule >> 6) & 1,
+                (rule >> 5) & 1,
+                (rule >> 4) & 1,
+                (rule >> 3) & 1,
+                (rule >> 2) & 1,
+                (rule >> 1) & 1,
+                (rule >> 0) & 1);
+
+
+        int repr = left*100 + above*10 + right;
+        printf("%d\n", repr);
         switch(left*100 + above*10 + right){
             case 111:
                 output[i] = (rule >> 7) & 1;
@@ -57,16 +71,16 @@ int* rule(int rule, int* input, int length) {
                 output[i] = (rule >> 5) & 1;
                 break;
             case 100:
-                output[i] = (rule >> 5) & 1;
-                break;
-            case 11: //011
                 output[i] = (rule >> 4) & 1;
                 break;
-            case 10: //010
+            case 11: //011
                 output[i] = (rule >> 3) & 1;
                 break;
-            case 1: //001
+            case 10: //010
                 output[i] = (rule >> 2) & 1;
+                break;
+            case 1: //001
+                output[i] = (rule >> 1) & 1;
                 break;
             case 0:
                 output[i] = (rule >> 0) & 1;
@@ -97,25 +111,35 @@ int* centered_init(int length) {
 /*******************************************************************************/
 /* Main                                                                        */
 /*******************************************************************************/
+void usage() {
+    printf("Usage: cells r l t\n");
+    printf("r - base-10 rule to use\n");
+    printf("l - length of row\n");
+    printf("t - timesteps to simulate\n");
+    exit(0);
+}
 int main(int argc, char **argv) {
+    if (argc != 4) { usage(); }
     srand(time(NULL));
 
-    int length = 10;
-    int timesteps = 100;
+    int rule_no = atoi(argv[1]);
+    int length = atoi(argv[2]);
+    int timesteps = atoi(argv[3]);
+    printf("Cells r:%d, l:%d, t:%d\n", rule_no, length, timesteps);
     FILE* fp = make_pbm("output.pbm", length, timesteps);
 
+    // TODO read initial state from file
     printf("Generating input\n");
     //int *init = random_init(length);
     int *data = centered_init(length);
 
     printf("Running simulation\n");
 
-    for (int t = 1; t < timesteps; t++) {
+    for (int t = 0; t < timesteps; t++) {
         write_line(data, length, fp);
-        data = rule(126, data, length);
+        data = rule(rule_no, data, length);
     }
 
-    write_line(data, length, fp);
     fflush(fp);
     fclose(fp);
     free(data);
