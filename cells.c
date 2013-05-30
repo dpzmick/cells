@@ -46,7 +46,8 @@ int* rule(int rule, int* input, int length) {
         if (right_i > length - 1) { right = 0; }
         else { right = input[right_i]; }
         above = input[i];
-    
+        
+        /*
         printf("%d%d%d%d%d%d%d%d\n",
                 (rule >> 7) & 1,
                 (rule >> 6) & 1,
@@ -56,10 +57,8 @@ int* rule(int rule, int* input, int length) {
                 (rule >> 2) & 1,
                 (rule >> 1) & 1,
                 (rule >> 0) & 1);
+        */
 
-
-        int repr = left*100 + above*10 + right;
-        printf("%d\n", repr);
         switch(left*100 + above*10 + right){
             case 111:
                 output[i] = (rule >> 7) & 1;
