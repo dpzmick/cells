@@ -103,7 +103,7 @@ void rule(int rule, int* input, int length, int* output) {
 /*******************************************************************************/
 int* random_init(int length) {
     int *init = (int*) malloc(length * sizeof(int));
-    #pragma omp for
+    #pragma omp parallel for
     for (int i = 0; i < length; i++) {
         init[i] = (rand() % 100) > 50;
     }
@@ -157,26 +157,10 @@ int main(int argc, char **argv) {
 
     printf("Running simulation\n");
 
-    #pragma omp parallel
-    {
     for (int t = 0; t < timesteps; t++) {
-            #pragma omp single
-            {
-                //say_hi();
-                //inspect_data(data, length);
-                write_line(data, length, fp);
-                //printf("out of write_line\n");
-            }
-            #pragma omp single
-            {
-                //say_hi();
-                rule(rule_no, data, length, output);
-                //printf("out of rule\n");
-            }
-        //printf("out of the barrier\n");
+        write_line(data, length, fp);
+        rule(rule_no, data, length, output);
         memcpy(data, output, length * sizeof(int));
-        //printf("done copying\n");
-    }
     }
 
     printf("Finishing up\n");
