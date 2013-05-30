@@ -5,6 +5,8 @@ cells: cells.c
 
 run: cells.c
 	./cells
+
+view:
 	convert output.pbm output.jpg
 	rm output.pbm
 	open output.jpg
