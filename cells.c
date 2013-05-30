@@ -22,12 +22,13 @@ FILE* make_pbm(char name[], int length, int timesteps) {
 
 // write a line to an image file
 void write_line(int *line, int line_length, FILE* fp) {
-    printf("Writing line\n");
+    //printf("Writing line\n");
     for (int i = 0; i < line_length; i++) {
         fprintf(fp, "%d", line[i]);
         if (i != line_length - 1) { fprintf(fp, " "); }
     }
     fprintf(fp, "\n");
+    return;
 }
 
 
@@ -37,11 +38,12 @@ void write_line(int *line, int line_length, FILE* fp) {
 // Builds new array and returns a pointer to it following rule 30.
 // assumes anything "off the map" is dead
 // output must be a chunk of memory we can overwrite of the right size
-int* rule(int rule, int* input, int length, int* output) {
-    printf("rule\n");
+void rule(int rule, int* input, int length, int* output) {
+    //printf("rule\n");
     int left, right, above, left_i, right_i;
-    //#pragma omp for
+    #pragma omp parallel for
     for (int i = 0; i < length; i++) {
+        //say_hi();
         left_i = i - 1;
         right_i = i + 1;
         if (left_i < 0) { left = 0; }
@@ -92,6 +94,8 @@ int* rule(int rule, int* input, int length, int* output) {
                 break;
         }
     }
+    //printf("out of the for\n");
+    return;
 }
 
 /*******************************************************************************/
@@ -135,6 +139,7 @@ void usage() {
 int main(int argc, char **argv) {
     if (argc != 4) { usage(); }
     srand(time(NULL));
+    omp_set_nested(0);
 
     int rule_no = atoi(argv[1]);
     int length = atoi(argv[2]);
@@ -151,23 +156,27 @@ int main(int argc, char **argv) {
     int *output = (int*) malloc(length * sizeof(int));
 
     printf("Running simulation\n");
+
+    #pragma omp parallel
+    {
     for (int t = 0; t < timesteps; t++) {
-        #pragma omp parallel
-        {
             #pragma omp single
             {
                 //say_hi();
                 //inspect_data(data, length);
                 write_line(data, length, fp);
+                //printf("out of write_line\n");
             }
             #pragma omp single
             {
                 //say_hi();
                 rule(rule_no, data, length, output);
+                //printf("out of rule\n");
             }
-        #pragma omp barrier
-        }
+        //printf("out of the barrier\n");
         memcpy(data, output, length * sizeof(int));
+        //printf("done copying\n");
+    }
     }
 
     printf("Finishing up\n");
