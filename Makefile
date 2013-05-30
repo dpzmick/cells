@@ -3,11 +3,8 @@ all: cells
 cells: cells.c
 	gcc -fopenmp cells.c -o cells -O2 -std=c99
 
-run: cells.c
+run: cells.c cells
 	./cells
-
-trun:
-	time ./cells
 
 view:
 	convert output.pbm output.jpg

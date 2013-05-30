@@ -27,11 +27,13 @@ void write_line(int *line, int line_length, FILE* fp) {
 /*******************************************************************************/
 // Builds new array and returns a pointer to it following rule 30.
 // assumes anything "off the map" is dead
-int* rule30(int* input, int length) {
+
+int* rule(int rule, int* input, int length) {
     int *output = (int*) malloc(length * sizeof(int));
     int left, right, above, left_i, right_i;
     #pragma omp parallel for
     for (int i = 0; i < length; i++) {
+        // TODO make in place
         left_i = i - 1;
         right_i = i + 1;
         if (left_i < 0) { left = 0; }
@@ -39,14 +41,32 @@ int* rule30(int* input, int length) {
         if (right_i > length - 1) { right = 0; }
         else { right = input[right_i]; }
         above = input[i];
-
-        if (       ( left && !above && !right)
-                || (!left &&  above &&  right)
-                || (!left &&  above && !right)
-                || (!left && !above &&  right)) {
-            output[i] = 1;
-        } else {
-            output[i] = 0;
+    
+        switch(left*100 + above*10 + right){
+            case 111:
+                output[i] = (rule >> 7) & 1;
+                break;
+            case 110:
+                output[i] = (rule >> 6) & 1;
+                break;
+            case 101:
+                output[i] = (rule >> 5) & 1;
+                break;
+            case 100:
+                output[i] = (rule >> 5) & 1;
+                break;
+            case 11: //011
+                output[i] = (rule >> 4) & 1;
+                break;
+            case 10: //010
+                output[i] = (rule >> 3) & 1;
+                break;
+            case 1: //001
+                output[i] = (rule >> 2) & 1;
+                break;
+            case 0:
+                output[i] = (rule >> 0) & 1;
+                break;
         }
     }
     return output;
@@ -76,8 +96,8 @@ int* centered_init(int length) {
 int main(int argc, char **argv) {
     srand(time(NULL));
 
-    int length = 10000;
-    int timesteps = 5000;
+    int length = 10;
+    int timesteps = 100;
     FILE* fp = make_pbm("output.pbm", length, timesteps);
 
     printf("Generating input\n");
@@ -88,7 +108,7 @@ int main(int argc, char **argv) {
 
     for (int t = 1; t < timesteps; t++) {
         write_line(data, length, fp);
-        data = rule30(data, length);
+        data = rule(126, data, length);
     }
 
     write_line(data, length, fp);
