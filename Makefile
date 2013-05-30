@@ -6,6 +6,9 @@ cells: cells.c
 run: cells.c
 	./cells
 
+trun:
+	time ./cells
+
 view:
 	convert output.pbm output.jpg
 	rm output.pbm
