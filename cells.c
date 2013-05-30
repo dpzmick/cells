@@ -4,6 +4,7 @@
 
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
 #include <time.h>
 
 /*******************************************************************************/
@@ -32,13 +33,11 @@ void write_line(int *line, int line_length, FILE* fp) {
 /*******************************************************************************/
 // Builds new array and returns a pointer to it following rule 30.
 // assumes anything "off the map" is dead
-
-int* rule(int rule, int* input, int length) {
-    int *output = (int*) malloc(length * sizeof(int));
+// output must be a chunk of memory we can overwrite of the right size
+int* rule(int rule, int* input, int length, int* output) {
     int left, right, above, left_i, right_i;
     #pragma omp parallel for
     for (int i = 0; i < length; i++) {
-        // TODO make in place
         left_i = i - 1;
         right_i = i + 1;
         if (left_i < 0) { left = 0; }
@@ -84,9 +83,11 @@ int* rule(int rule, int* input, int length) {
             case 0:
                 output[i] = (rule >> 0) & 1;
                 break;
+            default:
+                output[i] = 0;
+                break;
         }
     }
-    return output;
 }
 
 /*******************************************************************************/
@@ -134,9 +135,11 @@ int main(int argc, char **argv) {
 
     printf("Running simulation\n");
 
+    int* output = (int*) malloc(length * sizeof(int));
     for (int t = 0; t < timesteps; t++) {
         write_line(data, length, fp);
-        data = rule(rule_no, data, length);
+        rule(rule_no, data, length, output);
+        memcpy(data, output, length * sizeof(int));
     }
 
     fflush(fp);
