@@ -12,10 +12,10 @@
 /* Image Handling                                                              */
 /*******************************************************************************/
 // sets up an image file to write to
-FILE* make_pbm(char name[], int length, int timesteps) {
-    FILE *fp = fopen(name, "w");
-    fprintf(fp, "P1\n");
-    fprintf(fp, "%d %d\n", length, timesteps);
+// pgm with max gray set at 1. Doing this to avoid diddling around with bits.
+FILE* make_pgm(char name[], int length, int timesteps) {
+    FILE *fp = fopen(name, "wb");
+    fprintf(fp, "P5\n %d\n %d\n %d\n", length, timesteps, 1);
     return fp;
 }
 
@@ -40,7 +40,6 @@ void rule(int rule, char* input, int length, char* output) {
     int left, right, above, left_i, right_i;
     #pragma omp parallel for
     for (int i = 0; i < length; i++) {
-        //say_hi();
         left_i = i - 1;
         right_i = i + 1;
         if (left_i < 0) { left = 0; }
@@ -119,20 +118,20 @@ int main(int argc, char **argv) {
     int length = atoi(argv[2]);
     int timesteps = atoi(argv[3]);
     printf("Cells r:%d, l:%d, t:%d\n", rule_no, length, timesteps);
-    FILE* fp = make_pbm("output.pbm", length, timesteps);
+    FILE* fp = make_pgm("output.pbm", length, timesteps);
 
     // TODO read initial state from file
     printf("Generating input\n");
-    char *data = random_init(length);
-    //char *data = centered_init(length);
+    //char *data = random_init(length);
+    char *data = centered_init(length);
 
     printf("Generating output\n");
-    char *output = (char*) malloc(length * sizeof(char));
+    char *output = (char*) malloc(length * sizeof(char*));
 
     // buffer to hold things while running
-    char** buffer = (char**) malloc(timesteps * sizeof(char*));
+    char** buffer = (char**) malloc(timesteps * sizeof(char**));
     for (int t = 0; t < timesteps; t++) {
-        buffer[t] = (char*) malloc(length * sizeof(char));
+        buffer[t] = (char*) malloc(length * sizeof(char*));
     }
 
     printf("Running simulation\n");
@@ -143,8 +142,9 @@ int main(int argc, char **argv) {
     for (int t = 0; t < timesteps; t++) {
         // write to buffer
         for (int i = 0; i < length; i++) {
-            buffer[t][i] = (char)data[i];
+            buffer[t][i] = 1 - data[i];
         }
+        //write_line(data, length, fp);
         
         startTime = time(0);
         rule(rule_no, data, length, output);
@@ -155,8 +155,11 @@ int main(int argc, char **argv) {
     
     printf("Writing output file\n");
     startTime = time(0);
+    //for (int t = 0; t < timesteps; t++) {
+    //    write_line(buffer[t], length, fp);
+    //}
     for (int t = 0; t < timesteps; t++) {
-        write_line(buffer[t], length, fp);
+        fwrite(buffer[t], sizeof(char), length, fp);
     }
     fflush(fp);
     time_file = time(0) - startTime;
