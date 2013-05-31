@@ -109,13 +109,22 @@ int main(int argc, char **argv) {
     //printf("Generating output\n");
     char *output = (char*) malloc(length * sizeof(char*));
 
+    char **buffer = (char**) malloc(timesteps * sizeof(char*));
+    for (int t = 0; t < timesteps; t++) {
+        buffer[t] = (char*) calloc(length, sizeof(char*));
+    }
     //printf("Running simulation\n");
     for (int t = 0; t < timesteps; t++) {
-        fwrite(data, sizeof(char), length, fp);
+        for (int i = 0; i < length; i++) {
+            buffer[t][i] = data[i];
+        }
+        //fwrite(data, sizeof(char), length, fp);
         rule(rule_no, data, length, output);
         memcpy(data, output, length * sizeof(char));
     }
-    
+    for (int t = 0; t < timesteps; t++) {
+        fwrite(buffer[t], sizeof(char), length, fp);
+    }
     fflush(fp);
     fclose(fp);
     free(data);
