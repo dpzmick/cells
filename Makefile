@@ -12,7 +12,7 @@ SOURCES=cells.c
 all: cells
 
 cells: cells.c
-	$(CC) $(OPTS) $(OMP) -Dopenmp $(SOURCES) -o $(EXEC)
+	$(CC) $(OPTS) $(CILK) $(SOURCES) -o $(EXEC)
 
 run: all
 	@./$(EXEC) $(R) $(L) $(T)
