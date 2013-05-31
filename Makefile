@@ -1,4 +1,6 @@
+ifndef CC
 CC=gcc-4.9
+endif
 OPTS=-O2 -std=c99
 OMP=-fopenmp
 CILK=-fcilkplus -lcilkrts
@@ -15,7 +17,7 @@ cells-omp: cells.c
 cells-cilk: cells.c
 	$(CC) $(OPTS) $(CILK) -Dcilk $(SOURCES) -o $(EXEC)
 
-run: cells.c cells
+run: all
 	@echo Make usage: make run R=r L=l T=t
 	@./$(EXEC) $(R) $(L) $(T)
 

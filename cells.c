@@ -11,11 +11,6 @@
 #include <omp.h>
 #endif
 
-#ifdef cilk
-//#include <cilk/cilk.h>
-//#include <cilk/cilk_api.h>
-#endif
-
 /*******************************************************************************/
 /* Image Handling                                                              */
 /*******************************************************************************/
@@ -46,17 +41,10 @@ void write_line(char *line, int line_length, FILE* fp) {
 // output must be a chunk of memory we can overwrite of the right size
 void rule(int rule, char* input, int length, char* output) {
     int left, right, above, left_i, right_i;
-    #ifdef openmp
-    #pragma omp parallel for
-    #endif
-
-    #ifdef cilk
-    cilk_for
-    #else
-    for 
-    #endif
-        (int i = 0; i < length; i++) {
-        
+    for (int i = 0; i < length; i++) {
+        #pragma omp task
+        {
+        printf("for loop running from %d\n", omp_get_thread_num());
         left_i = i - 1;
         right_i = i + 1;
         if (left_i < 0) { left = 0; }
@@ -94,6 +82,7 @@ void rule(int rule, char* input, int length, char* output) {
                 output[i] = 0;
                 break;
         }
+        }
     }
     return;
 }
@@ -103,15 +92,7 @@ void rule(int rule, char* input, int length, char* output) {
 /*******************************************************************************/
 char* random_init(int length) {
     char *init = (char*) malloc(length * sizeof(char));
-    #ifdef openmp
-    #pragma omp parallel for
-    #endif
-
-    #ifdef cilk
-    cilk_for
-    #else
     for 
-    #endif
         (int i = 0; i < length; i++) {
         
         init[i] = (rand() % 100) > 50;
@@ -136,6 +117,7 @@ void usage() {
     exit(0);
 }
 int main(int argc, char **argv) {
+    omp_set_nested(1);
     if (argc != 4) { usage(); }
     srand(time(NULL));
 
@@ -153,47 +135,34 @@ int main(int argc, char **argv) {
     //printf("Generating output\n");
     char *output = (char*) malloc(length * sizeof(char*));
 
-    #ifndef cilk
-    // buffer to hold things while running
-    char** buffer = (char**) malloc(timesteps * sizeof(char**));
-    for (int t = 0; t < timesteps; t++) {
-        buffer[t] = (char*) malloc(length * sizeof(char*));
-    }
-    #endif
-
     //printf("Running simulation\n");
     for (int t = 0; t < timesteps; t++) {
-        // TODO async IO without cilk
-        #ifdef cilk
-        cilk_spawn fwrite(data, sizeof(char), length, fp);
-        #else
-        // write to buffer
-        for (int i = 0; i < length; i++) {
-            buffer[t][i] = 1 - data[i];
+        #pragma omp parallel num_threads(10)
+        {
+            #pragma omp single
+            {
+                #pragma omp task
+                {
+                printf("file write from %d\n", omp_get_thread_num());
+                fwrite(data, sizeof(char), length, fp);
+                sleep(10);
+                }
+                #pragma omp task
+                {
+                printf("Compute from %d\n", omp_get_thread_num());
+                rule(rule_no, data, length, output);
+                }
+            }
         }
-        #endif
-
-        rule(rule_no, data, length, output);
-
-        #ifdef cilk
-        cilk_sync;
-        #endif
+        printf("copying data\n");
         memcpy(data, output, length * sizeof(char));
     }
     
     //printf("Writing output file\n");
-    #ifndef cilk
-    for (int t = 0; t < timesteps; t++) {
-        fwrite(buffer[t], sizeof(char), length, fp);
-    }
-    #endif
-    fflush(fp);
 
+    fflush(fp);
     fclose(fp);
     free(data);
-    #ifndef cilk
-    free(buffer);
-    #endif
     free(output);
     exit(0);
 }
