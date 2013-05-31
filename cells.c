@@ -112,8 +112,9 @@ int main(int argc, char **argv) {
 
     //printf("Running simulation\n");
     for (int t = 0; t < timesteps; t++) {
-        fwrite(data, sizeof(char), length, fp);
+        cilk_spawn fwrite(data, sizeof(char), length, fp);
         rule(rule_no, data, length, output);
+        cilk_sync;
         memcpy(data, output, length * sizeof(char));
     }
 
