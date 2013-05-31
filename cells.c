@@ -6,7 +6,15 @@
 #include <stdio.h>
 #include <string.h>
 #include <time.h>
+
+#ifdef openmp
 #include <omp.h>
+#endif
+
+#ifdef cilk
+//#include <cilk/cilk.h>
+//#include <cilk/cilk_api.h>
+#endif
 
 /*******************************************************************************/
 /* Image Handling                                                              */
@@ -33,13 +41,22 @@ void write_line(char *line, int line_length, FILE* fp) {
 /*******************************************************************************/
 /* Rules                                                                       */
 /*******************************************************************************/
-// Builds new array and returns a pointer to it following rule 30.
+// Applies specified rule to input and writes result to output
 // assumes anything "off the map" is dead
 // output must be a chunk of memory we can overwrite of the right size
 void rule(int rule, char* input, int length, char* output) {
     int left, right, above, left_i, right_i;
+    #ifdef openmp
     #pragma omp parallel for
-    for (int i = 0; i < length; i++) {
+    #endif
+
+    #ifdef cilk
+    cilk_for
+    #else
+    for 
+    #endif
+        (int i = 0; i < length; i++) {
+        
         left_i = i - 1;
         right_i = i + 1;
         if (left_i < 0) { left = 0; }
@@ -86,8 +103,17 @@ void rule(int rule, char* input, int length, char* output) {
 /*******************************************************************************/
 char* random_init(int length) {
     char *init = (char*) malloc(length * sizeof(char));
+    #ifdef openmp
     #pragma omp parallel for
-    for (int i = 0; i < length; i++) {
+    #endif
+
+    #ifdef cilk
+    cilk_for
+    #else
+    for 
+    #endif
+        (int i = 0; i < length; i++) {
+        
         init[i] = (rand() % 100) > 50;
     }
     return init;
@@ -112,7 +138,6 @@ void usage() {
 int main(int argc, char **argv) {
     if (argc != 4) { usage(); }
     srand(time(NULL));
-    omp_set_nested(0);
 
     int rule_no = atoi(argv[1]);
     int length = atoi(argv[2]);
@@ -128,43 +153,45 @@ int main(int argc, char **argv) {
     //printf("Generating output\n");
     char *output = (char*) malloc(length * sizeof(char*));
 
+    #ifndef cilk
     // buffer to hold things while running
     char** buffer = (char**) malloc(timesteps * sizeof(char**));
     for (int t = 0; t < timesteps; t++) {
         buffer[t] = (char*) malloc(length * sizeof(char*));
     }
+    #endif
 
     //printf("Running simulation\n");
-    time_t startTime = time(0);
-    double time_file = 0;
-    double time_rule = 0;
-
     for (int t = 0; t < timesteps; t++) {
-        // TODO async IO
+        // TODO async IO without cilk
+        #ifdef cilk
+        cilk_spawn fwrite(data, sizeof(char), length, fp);
+        #else
         // write to buffer
         for (int i = 0; i < length; i++) {
             buffer[t][i] = 1 - data[i];
         }
-        startTime = time(0);
-        rule(rule_no, data, length, output);
-        time_rule += time(0) - startTime;
+        #endif
 
+        rule(rule_no, data, length, output);
+
+        #ifdef cilk
+        cilk_sync;
+        #endif
         memcpy(data, output, length * sizeof(char));
     }
     
     //printf("Writing output file\n");
-    startTime = time(0);
+    #ifndef cilk
     for (int t = 0; t < timesteps; t++) {
         fwrite(buffer[t], sizeof(char), length, fp);
     }
+    #endif
     fflush(fp);
-    time_file = time(0) - startTime;
 
-    //printf("Finishing up, time_file:%.0f, time_rule:%.0f\n", time_file, time_rule);
     fclose(fp);
     free(data);
-
+    free(buffer);
+    free(output);
     exit(0);
 }
-
-
