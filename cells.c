@@ -44,7 +44,7 @@ void rule(int rule, char* input, int length, char* output) {
     for (int i = 0; i < length; i++) {
         #pragma omp task
         {
-        printf("for loop running from %d\n", omp_get_thread_num());
+        //printf("for loop running from %d\n", omp_get_thread_num());
         left_i = i - 1;
         right_i = i + 1;
         if (left_i < 0) { left = 0; }
@@ -117,7 +117,6 @@ void usage() {
     exit(0);
 }
 int main(int argc, char **argv) {
-    omp_set_nested(1);
     if (argc != 4) { usage(); }
     srand(time(NULL));
 
@@ -137,24 +136,22 @@ int main(int argc, char **argv) {
 
     //printf("Running simulation\n");
     for (int t = 0; t < timesteps; t++) {
-        #pragma omp parallel num_threads(10)
+        #pragma omp parallel
         {
             #pragma omp single
             {
                 #pragma omp task
                 {
-                printf("file write from %d\n", omp_get_thread_num());
+                //printf("file write from %d\n", omp_get_thread_num());
                 fwrite(data, sizeof(char), length, fp);
-                sleep(10);
                 }
                 #pragma omp task
                 {
-                printf("Compute from %d\n", omp_get_thread_num());
+                //printf("Compute from %d\n", omp_get_thread_num());
                 rule(rule_no, data, length, output);
                 }
             }
         }
-        printf("copying data\n");
         memcpy(data, output, length * sizeof(char));
     }
     
