@@ -6,8 +6,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <time.h>
-#include <cilk/cilk.h>
-#include <cilk/cilk_api.h>
+#include <omp.h>
 
 /*******************************************************************************/
 /* Image Handling                                                              */
@@ -105,9 +104,9 @@ int main(int argc, char **argv) {
     int length = atoi(argv[1]);
     int timesteps = atoi(argv[2]);
     
+    #pragma omp parallel for
     for (int rule_no = 0; rule_no <= 255; rule_no++) {
-        cilk_spawn rule(rule_no, length, timesteps);
+        rule(rule_no, length, timesteps);
     }
-    cilk_sync;
     return 0;
 }
