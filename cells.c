@@ -193,7 +193,7 @@ int main(int argc, char **argv) {
     free(data);
     #ifndef cilk
     free(buffer);
-    free(output);
     #endif
+    free(output);
     exit(0);
 }
