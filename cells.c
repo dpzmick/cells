@@ -38,9 +38,8 @@ void write_line(char *line, int line_length, FILE* fp) {
 // Applies specified rule to input and writes result to output
 // assumes anything "off the map" is dead
 // output must be a chunk of memory we can overwrite of the right size
-void rule(int rule, char* input, int length, char* output) {
+void apply(int rule, char* input, int length, char* output) {
     int left, right, above, left_i, right_i;
-    #pragma omp for
     for (int i = 0; i < length; i++) {
         left_i = i - 1;
         right_i = i + 1;
@@ -68,64 +67,47 @@ void rule(int rule, char* input, int length, char* output) {
 /*******************************************************************************/
 /* Initialization                                                              */
 /*******************************************************************************/
-char* random_init(int length) {
-    char *init = (char*) malloc(length * sizeof(char));
-    for (int i = 0; i < length; i++) {
-        init[i] = (rand() % 100) > 50;
-    }
-    return init;
-}
-
 char* centered_init(int length) {
     char *init = (char*) calloc(length, sizeof(char));
     init[length / 2] = 1;
     return init;
 }
+/*******************************************************************************/
+/* Rule                                                                        */
+/*******************************************************************************/
 
+int rule(int rule_no, int length, int timesteps) {
+    char filename[20];
+    sprintf(filename, "output/rule%03d.pbm", rule_no);
+    printf("filename: %s\n", filename);
+    FILE* fp = make_pgm(filename, length, timesteps);
+    char *data = centered_init(length);
+    char *output = (char*) malloc(length * sizeof(char*));
+    for (int t = 0; t < timesteps; t++) {
+        fwrite(data, sizeof(char), length, fp);
+        apply(rule_no, data, length, output);
+        memcpy(data, output, length * sizeof(char));
+    }
+    fflush(fp);
+    fclose(fp);
+    free(data);
+    free(output);
+}
 /*******************************************************************************/
 /* Main                                                                        */
 /*******************************************************************************/
 void usage() {
     printf("Usage: cells r l t\n");
-    printf("r - base-10 rule to use\n");
     printf("l - length of row\n");
     printf("t - timesteps to simulate\n");
     exit(0);
 }
 int main(int argc, char **argv) {
-    if (argc != 4) { usage(); }
-    srand(time(NULL));
+    if (argc != 3) { usage(); }
+    int length = atoi(argv[1]);
+    int timesteps = atoi(argv[2]);
+    
+    rule(30, length, timesteps);
 
-    int rule_no = atoi(argv[1]);
-    int length = atoi(argv[2]);
-    int timesteps = atoi(argv[3]);
-    printf("Cells r:%d, l:%d, t:%d\n", rule_no, length, timesteps);
-    FILE* fp = make_pgm("output.pbm", length, timesteps);
-
-    // TODO read initial state from file
-    //printf("Generating input\n");
-    //char *data = random_init(length);
-    char *data = centered_init(length);
-
-    //printf("Generating output\n");
-    char *output = (char*) malloc(length * sizeof(char*));
-
-    //printf("Running simulation\n");
-    #pragma omp parallel
-    for (int t = 0; t < timesteps; t++) {
-        // apparently overhead to create sections is large enough that IO is
-        // faster
-        #pragma omp single
-        {
-        fwrite(data, sizeof(char), length, fp);
-        rule(rule_no, data, length, output);
-        memcpy(data, output, length * sizeof(char));
-        }
-    }
-
-    fflush(fp);
-    fclose(fp);
-    free(data);
-    free(output);
-    exit(0);
+    return 0;
 }
