@@ -39,6 +39,8 @@ void write_line(char *line, int line_length, FILE* fp) {
 // Applies specified rule to input and writes result to output
 // assumes anything "off the map" is dead
 // output must be a chunk of memory we can overwrite of the right size
+// splitting up the loop does not seem to do anything useful for reasonable
+// problem sizes
 void rule(int rule, char* input, int length, char* output) {
     int left, right, above, left_i, right_i;
     for (int i = 0; i < length; i++) {
