@@ -1,5 +1,10 @@
 This is a simple elementary cellular automata simulator.
 
-Everything should be pretty self explanitory.
+Everything should be pretty self explanatory.
 
-Still trying to find a better way to make image files.
+Requires either openmp or a compiler supporting cilk, or neither (I think).
+
+You will probably need to modify the makefile to set up.
+
+Note: OpenMP doesn't work with OS X supplied "gcc" (clang). To use OpenMP, you
+will need to build a copy real gcc (Use homebrew)
