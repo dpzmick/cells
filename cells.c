@@ -113,6 +113,8 @@ int main(int argc, char **argv) {
     //printf("Running simulation\n");
     #pragma omp parallel
     for (int t = 0; t < timesteps; t++) {
+        // apparently overhead to create sections is large enough that IO is
+        // faster
         #pragma omp single
         {
         fwrite(data, sizeof(char), length, fp);
