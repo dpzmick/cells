@@ -9,13 +9,10 @@ EXEC=cells
 SOURCES=cells.c
 
 
-all: cells-omp
+all: cells
 
-cells-omp: cells.c
+cells: cells.c
 	$(CC) $(OPTS) $(OMP) -Dopenmp $(SOURCES) -o $(EXEC)
-
-cells-cilk: cells.c
-	$(CC) $(OPTS) $(CILK) -Dcilk $(SOURCES) -o $(EXEC)
 
 run: all
 	@echo Make usage: make run R=r L=l T=t
