@@ -2,13 +2,14 @@
 // David Zmick wrote this, but he really doesn't care what you do with it.
 // This is public domain
 
-// OpenMP Version
+// Cilk Version
 
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 #include <time.h>
-#include <omp.h>
+#include <cilk/cilk.h>
+#include <cilk/cilk_api.h>
 
 /*******************************************************************************/
 /* Image Handling                                                              */
@@ -40,7 +41,6 @@ void write_line(char *line, int line_length, FILE* fp) {
 // output must be a chunk of memory we can overwrite of the right size
 void rule(int rule, char* input, int length, char* output) {
     int left, right, above, left_i, right_i;
-    #pragma omp for
     for (int i = 0; i < length; i++) {
         left_i = i - 1;
         right_i = i + 1;
@@ -111,14 +111,10 @@ int main(int argc, char **argv) {
     char *output = (char*) malloc(length * sizeof(char*));
 
     //printf("Running simulation\n");
-    #pragma omp parallel
     for (int t = 0; t < timesteps; t++) {
-        #pragma omp single
-        {
         fwrite(data, sizeof(char), length, fp);
         rule(rule_no, data, length, output);
         memcpy(data, output, length * sizeof(char));
-        }
     }
 
     fflush(fp);
