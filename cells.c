@@ -112,11 +112,13 @@ int main(int argc, char **argv) {
     //printf("Running simulation\n");
     #pragma omp parallel
     for (int t = 0; t < timesteps; t++) {
-        #pragma omp task
+        #pragma omp section
+        {
+        #pragma omp section
         fwrite(data, sizeof(char), length, fp);
-        #pragma omp task
+        #pragma omp section
         rule(rule_no, data, length, output);
-        #pragma omp taskwait
+        }
         memcpy(data, output, length * sizeof(char));
     }
 
