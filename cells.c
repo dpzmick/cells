@@ -40,6 +40,7 @@ void write_line(char *line, int line_length, FILE* fp) {
 // output must be a chunk of memory we can overwrite of the right size
 void rule(int rule, char* input, int length, char* output) {
     int left, right, above, left_i, right_i;
+    #pragma omp for
     for (int i = 0; i < length; i++) {
         left_i = i - 1;
         right_i = i + 1;
@@ -112,14 +113,12 @@ int main(int argc, char **argv) {
     //printf("Running simulation\n");
     #pragma omp parallel
     for (int t = 0; t < timesteps; t++) {
-        #pragma omp section
+        #pragma omp single
         {
-        #pragma omp section
         fwrite(data, sizeof(char), length, fp);
-        #pragma omp section
         rule(rule_no, data, length, output);
-        }
         memcpy(data, output, length * sizeof(char));
+        }
     }
 
     fflush(fp);
