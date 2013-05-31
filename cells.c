@@ -2,13 +2,12 @@
 // David Zmick wrote this, but he really doesn't care what you do with it.
 // This is public domain
 
-// OpenMP Version
-
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 #include <time.h>
-#include <omp.h>
+#include <cilk/cilk.h>
+#include <cilk/cilk_api.h>
 
 /*******************************************************************************/
 /* Image Handling                                                              */
@@ -30,7 +29,6 @@ void write_line(char *line, int line_length, FILE* fp) {
     fprintf(fp, "\n");
     return;
 }
-
 
 /*******************************************************************************/
 /* Rules                                                                       */
@@ -76,10 +74,10 @@ char* centered_init(int length) {
 /* Rule                                                                        */
 /*******************************************************************************/
 
-int rule(int rule_no, int length, int timesteps) {
+void rule(int rule_no, int length, int timesteps) {
     char filename[20];
     sprintf(filename, "output/rule%03d.pbm", rule_no);
-    printf("filename: %s\n", filename);
+    printf("making %s\n", filename);
     FILE* fp = make_pgm(filename, length, timesteps);
     char *data = centered_init(length);
     char *output = (char*) malloc(length * sizeof(char*));
@@ -107,7 +105,9 @@ int main(int argc, char **argv) {
     int length = atoi(argv[1]);
     int timesteps = atoi(argv[2]);
     
-    rule(30, length, timesteps);
-
+    for (int rule_no = 0; rule_no <= 255; rule_no++) {
+        cilk_spawn rule(rule_no, length, timesteps);
+    }
+    cilk_sync;
     return 0;
 }
