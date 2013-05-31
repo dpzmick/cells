@@ -2,7 +2,6 @@ ifndef CC
 CC=gcc-4.9
 endif
 OPTS=-O2 -std=c99
-OMP=-fopenmp
 
 EXEC=cells
 SOURCES=cells.c
@@ -11,9 +10,13 @@ SOURCES=cells.c
 all: cells
 
 cells: cells.c
-	$(CC) $(OPTS) $(OMP) $(SOURCES) -o $(EXEC)
+	$(CC) $(OPTS) -fopenmp $(SOURCES) -o $(EXEC)
+
+cells-cilk: cells.c
+	$(CC) $(OPTS) -fcilkplus -lcilkrts $(SOURCES) -o $(EXEC) 
 
 run: all
+	rm -r output
 	mkdir output
 	@./$(EXEC) $(L) $(T)
 
