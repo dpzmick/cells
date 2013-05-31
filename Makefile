@@ -15,7 +15,6 @@ cells: cells.c
 	$(CC) $(OPTS) $(OMP) -Dopenmp $(SOURCES) -o $(EXEC)
 
 run: all
-	@echo Make usage: make run R=r L=l T=t
 	@./$(EXEC) $(R) $(L) $(T)
 
 run_fav: cells cells.c

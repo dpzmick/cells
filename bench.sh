@@ -1,6 +1,7 @@
 #!/bin/bash
+make clean
 make
-for run in {1..10}
+for run in {1..100}
 do
     echo "Running trial $run"
     gtime -f"%e" -o"b_log" --append make run R=30 L=10000 T=1000
@@ -12,3 +13,4 @@ cat b_log | awk 'NR == 1 { max=$1; min=$1; sum=0 }
    END {printf "Min: %d\tMax: %d\tAverage: %f\n", min, max, sum/NR}'
 
 rm b_log
+make clean
