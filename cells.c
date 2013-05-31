@@ -191,7 +191,9 @@ int main(int argc, char **argv) {
 
     fclose(fp);
     free(data);
+    #ifndef cilk
     free(buffer);
     free(output);
+    #endif
     exit(0);
 }
